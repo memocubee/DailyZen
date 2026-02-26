@@ -20,6 +20,7 @@ https://tgpphotograph.github.io/notion-quote/
 
 ### Notion
 1.貼入網址 https://tgpphotograph.github.io/notion-quote/
+
 2.點嵌入
 
 ## 🎛️ 客製化選項
