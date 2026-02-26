@@ -78,61 +78,48 @@
   </div>
 
   <script>
-    let quotes = []
+  let quotes = []
 
-    function getTodayKey() {
-      const d = new Date()
-      return `quoteday_${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`
-    }
+  async function loadData() {
+    const res = await fetch('./quotes.json?v=' + Date.now())
+    quotes = await res.json()
+  }
 
-    function getTodayIndexKey() {
-      return getTodayKey() + '_idx'
-    }
+  function getDailyIndex() {
+    const d = new Date()
+    const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
+    // 用日期當 seed，同一天永遠同一句，不依賴 localStorage
+    let hash = seed
+    hash = ((hash >> 16) ^ hash) * 0x45d9f3b
+    hash = ((hash >> 16) ^ hash) * 0x45d9f3b
+    hash = (hash >> 16) ^ hash
+    return Math.abs(hash) % quotes.length
+  }
 
-    async function loadData() {
-      const res = await fetch('./quotes.json?v=' + Date.now())
-      quotes = await res.json()
-    }
+  let currentIndex = 0
 
-    function showQuote(index) {
-      const quoteEl = document.getElementById('quote')
-      const item    = quotes[index]
+  function showQuote(index) {
+    const quoteEl = document.getElementById('quote')
+    const item = quotes[index]
+    document.body.style.background = item.color
+    quoteEl.classList.remove('fade')
+    void quoteEl.offsetWidth
+    quoteEl.classList.add('fade')
+    quoteEl.innerText = item.text
+  }
 
-      document.body.style.background = item.color
-      quoteEl.classList.remove('fade')
-      void quoteEl.offsetWidth
-      quoteEl.classList.add('fade')
-      quoteEl.innerText = item.text
-    }
+  function forceNewQuote() {
+    currentIndex = (currentIndex + 1) % quotes.length
+    showQuote(currentIndex)
+  }
 
-    function getTodayIndex() {
-      const key    = getTodayIndexKey()
-      const cached = localStorage.getItem(key)
-      if (cached !== null) return parseInt(cached)
+  async function init() {
+    await loadData()
+    currentIndex = getDailyIndex()
+    showQuote(currentIndex)
+  }
 
-      // 今天第一次：用日期產生固定 index
-      const d     = new Date()
-      const seed  = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()
-      const index = Math.floor(Math.random() * quotes.length)
-      localStorage.setItem(key, index)
-      return index
-    }
-
-    async function forceNewQuote() {
-      const key      = getTodayIndexKey()
-      const current  = parseInt(localStorage.getItem(key) || '0')
-      const next     = (current + 1) % quotes.length
-      localStorage.setItem(key, next)
-      showQuote(next)
-    }
-
-    async function init() {
-      await loadData()
-      const index = getTodayIndex()
-      showQuote(index)
-    }
-
-    init()
-  </script>
+  init()
+</script>
 </body>
 </html>
