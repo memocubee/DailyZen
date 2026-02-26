@@ -113,7 +113,7 @@
       // 今天第一次：用日期產生固定 index
       const d     = new Date()
       const seed  = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()
-      const index = seed % quotes.length
+      const index = Math.floor(Math.random() * quotes.length)
       localStorage.setItem(key, index)
       return index
     }
