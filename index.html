@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>每日金句</title>
+  <title>句日 QuoteDay</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
   <style>
@@ -14,7 +14,6 @@
       width: 100vw;
       background: linear-gradient(135deg, #fdfcfb 0%, #f5f0eb 100%);
       font-family: "Noto Serif TC", serif;
-      cursor: pointer;
       overflow: hidden;
     }
 
@@ -27,6 +26,7 @@
       justify-content: center;
       padding: 0 20px;
       position: relative;
+      cursor: pointer;
     }
 
     .quote {
@@ -38,7 +38,6 @@
       max-width: 90%;
       max-height: 70vh;
       overflow: hidden;
-      transition: opacity 0.4s ease;
     }
 
     .from {
@@ -84,14 +83,11 @@
   </style>
 </head>
 <body>
-  <div class="card" onclick="loadQuote()">
-  <div class="card">
+  <div class="card" onclick="forceNewQuote()">
     <div class="deco">❝</div>
     <div class="deco right">❞</div>
-    
-    <p class="quote" id="quote">點擊換一句</p>
+    <p class="quote" id="quote">載入中⋯</p>
     <p class="from" id="from"></p>
-    
     <div class="hint">點擊換一句，每天自動更新</div>
   </div>
 
@@ -103,26 +99,12 @@
       return `quote_${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`
     }
 
-    async function loadQuote() {
+    async function fetchAndShow() {
       const quoteEl = document.getElementById('quote')
       const fromEl  = document.getElementById('from')
-      const todayKey = getTodayKey()
-      const cached   = localStorage.getItem(todayKey)
 
-      // 移除動畫
       quoteEl.classList.remove('fade')
       fromEl.classList.remove('fade')
-
-      if (cached) {
-        const { quote, from } = JSON.parse(cached)
-        quoteEl.innerText = quote
-        fromEl.innerText  = from
-        setTimeout(() => {
-          quoteEl.classList.add('fade')
-          fromEl.classList.add('fade')
-        }, 50)
-        return
-      }
 
       try {
         const res  = await fetch('https://v1.hitokoto.cn/?c=k&c=i&c=h&c=b&encode=json')
@@ -131,25 +113,47 @@
         const quoteText = await converter(data.hitokoto)
         const fromText  = data.from ? '—— ' + await converter(data.from) : ''
 
-        localStorage.setItem(todayKey, JSON.stringify({
-          quote: quoteText,
-          from:  fromText
-        }))
+        void quoteEl.offsetWidth
+        quoteEl.classList.add('fade')
+        fromEl.classList.add('fade')
+        quoteEl.innerText = quoteText
+        fromEl.innerText  = fromText
 
-        setTimeout(() => {
-          quoteEl.classList.add('fade')
-          fromEl.classList.add('fade')
-          quoteEl.innerText = quoteText
-          fromEl.innerText  = fromText
-        }, 50)
-
+        return { quote: quoteText, from: fromText }
       } catch {
         quoteEl.innerText = '每一個努力的當下，都是未來的自己在感謝你。'
         fromEl.innerText  = ''
+        return null
       }
     }
 
-    // 載入時自動觸發一次
+    // 每天第一次載入：讀快取或重新抓
+    async function loadQuote() {
+      const todayKey = getTodayKey()
+      const cached   = localStorage.getItem(todayKey)
+
+      if (cached) {
+        const { quote, from } = JSON.parse(cached)
+        const quoteEl = document.getElementById('quote')
+        const fromEl  = document.getElementById('from')
+        void quoteEl.offsetWidth
+        quoteEl.classList.add('fade')
+        fromEl.classList.add('fade')
+        quoteEl.innerText = quote
+        fromEl.innerText  = from
+      } else {
+        const result = await fetchAndShow()
+        if (result) localStorage.setItem(todayKey, JSON.stringify(result))
+      }
+    }
+
+    // 點擊：強制換新句（不讀快取）
+    async function forceNewQuote() {
+      const todayKey = getTodayKey()
+      const result   = await fetchAndShow()
+      if (result) localStorage.setItem(todayKey, JSON.stringify(result))
+    }
+
     loadQuote()
   </script>
 </body>
