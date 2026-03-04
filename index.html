@@ -108,10 +108,14 @@
     quoteEl.innerText = item.text
   }
 
-  function forceNewQuote() {
-    currentIndex = (currentIndex + 1) % quotes.length
-    showQuote(currentIndex)
-  }
+function forceNewQuote() {
+  let newIndex
+  do {
+    newIndex = Math.floor(Math.random() * quotes.length)
+  } while (newIndex === currentIndex) // 避免連續抽到同一句
+  currentIndex = newIndex
+  showQuote(currentIndex)
+}
 
   async function init() {
     await loadData()
